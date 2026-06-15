@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbustus — Emitir Voucher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="supabase.js"></script>
+<style id="base-css"></style>
+<style>
+/* LOGIN PIN */
+.pin-overlay { position:fixed;inset:0;z-index:9999;background:var(--azul);display:flex;align-items:center;justify-content:center;padding:1rem; }
+.pin-overlay::before { content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0,rgba(255,255,255,.025) 1px,transparent 1px,transparent 48px),repeating-linear-gradient(0deg,rgba(255,255,255,.015) 0,rgba(255,255,255,.015) 1px,transparent 1px,transparent 48px); }
+.pin-box { background:#fff;border-radius:20px;padding:2.5rem 2rem;width:100%;max-width:360px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.3);text-align:center; }
+.pin-eyebrow { font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--teal);margin-bottom:6px; }
+.pin-title { font-size:22px;font-weight:900;color:var(--azul);text-transform:uppercase;letter-spacing:-1px;margin-bottom:4px; }
+.pin-sub { font-size:12px;color:var(--cinza-texto);margin-bottom:1.75rem;line-height:1.5; }
+.pin-input { width:100%;border:2px solid var(--cinza-borda);border-radius:10px;padding:14px;font-size:28px;font-weight:900;font-family:'Courier New',monospace;letter-spacing:6px;color:var(--azul);text-align:center;background:#F4F6F9;outline:none;transition:border .2s,box-shadow .2s; }
+.pin-input:focus { border-color:var(--teal);box-shadow:0 0 0 4px rgba(16,182,172,.12);background:#fff; }
+.pin-btn { width:100%;padding:14px;background:var(--azul);color:#fff;border:none;border-radius:10px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;cursor:pointer;transition:all .2s;margin-top:12px; }
+.pin-btn:hover { background:#0d3899;transform:translateY(-1px);box-shadow:0 4px 16px rgba(11,46,115,.28); }
+.pin-btn:disabled { opacity:.5;cursor:not-allowed;transform:none; }
+.pin-error { background:#FDEDEC;color:var(--perigo);border:1px solid #F1948A;border-radius:8px;padding:10px 14px;font-size:12px;font-weight:600;margin-top:10px;display:none; }
+.pin-error.show { display:block;animation:shake .4s ease; }
+@keyframes shake { 0%,100%{transform:translateX(0)} 20%,60%{transform:translateX(-6px)} 40%,80%{transform:translateX(6px)} }
+
+/* HEADER VENDEDOR */
+.vd-bar { background:var(--verde-escuro);padding:.6rem 1.5rem;display:flex;align-items:center;justify-content:space-between; }
+.vd-nome { font-size:12px;font-weight:700;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.5px; }
+.vd-nome strong { color:#fff; }
+.vd-logout { font-size:11px;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;background:none;border:1px solid rgba(255,255,255,.2);border-radius:5px;padding:4px 10px;cursor:pointer;font-family:'Montserrat',sans-serif;transition:all .2s; }
+.vd-logout:hover { color:#fff;border-color:rgba(255,255,255,.5); }
+
+/* VOUCHER RESULTADO */
+.voucher-result { display:none;margin-top:1.25rem;border:2px solid var(--verde);border-radius:16px;overflow:hidden; }
+.voucher-result.show { display:block;animation:fadeSlide .35s ease; }
+@keyframes fadeSlide { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+.vr-header { background:var(--verde-escuro);padding:1.1rem 1.5rem;display:flex;align-items:center;gap:12px; }
+.vr-htxt span { font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--teal);display:block; }
+.vr-htxt strong { font-size:16px;color:#fff;display:block;font-weight:700; }
+.vr-body { padding:1.5rem;background:#f6fef9; }
+.vr-code { font-size:28px;font-weight:900;font-family:'Courier New',monospace;color:var(--azul);letter-spacing:4px;background:#EDF3FF;border:1.5px dashed var(--azul);border-radius:10px;padding:14px;text-align:center;cursor:pointer;transition:background .2s;margin-bottom:1rem; }
+.vr-code:hover { background:#dce8ff; }
+.vr-code-hint { font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--cinza-texto);font-family:'Montserrat',sans-serif;display:block;margin-top:5px; }
+.vr-meta { font-size:13px;color:#3a4a5c;line-height:1.7; }
+.vr-meta strong { color:var(--azul); }
+.vr-actions { display:flex;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid #c3e6d0; }
+.btn-outline { flex:1;padding:10px;border-radius:8px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;border:1.5px solid;background:transparent;transition:all .15s; }
+.btn-wpp { color:#0f6c52;border-color:#0f6c52; } .btn-wpp:hover { background:#e8f8f3; }
+.btn-link-cp { color:var(--azul);border-color:var(--azul); } .btn-link-cp:hover { background:#EDF3FF; }
+.btn-nova { color:var(--cinza-texto);border-color:var(--cinza-borda); } .btn-nova:hover { background:var(--cinza-claro); }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PIN -->
+<div class="pin-overlay" id="pin-overlay">
+  <div class="pin-box">
+    <svg width="52" height="52" viewBox="0 0 52 52" style="margin:0 auto 1.25rem;display:block" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="26" cy="26" r="26" fill="#0B2E73"/>
+      <circle cx="26" cy="26" r="20" fill="#2E8B57"/>
+      <rect x="13" y="25" width="26" height="2.5" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <rect x="25" y="13" width="2.5" height="26" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <ellipse cx="26" cy="26" rx="7" ry="11" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="1.8"/>
+      <circle cx="26" cy="26" r="3.5" fill="#fff"/>
+    </svg>
+    <div class="pin-eyebrow">Área do vendedor</div>
+    <div class="pin-title">Entrar com PIN</div>
+    <div class="pin-sub">Arbustus Gramados Sintéticos<br>Digite seu PIN para emitir vouchers</div>
+    <input type="password" id="pin-input" class="pin-input" placeholder="• • • •"
+      maxlength="8" inputmode="numeric"
+      onkeydown="if(event.key==='Enter')entrarPin()">
+    <button class="pin-btn" id="pin-btn" onclick="entrarPin()">Entrar</button>
+    <div class="pin-error" id="pin-error">PIN incorreto ou inativo.</div>
+  </div>
+</div>
+
+<!-- CONTEÚDO (oculto até login) -->
+<div id="app" style="display:none">
+  <header>
+    <a href="index.html" class="logo-wrap">
+      <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="20" cy="20" r="20" fill="#0B2E73"/>
+        <circle cx="20" cy="20" r="16" fill="#2E8B57"/>
+        <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
+        <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
+        <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+        <circle cx="20" cy="20" r="3" fill="#fff"/>
+      </svg>
+      <div>
+        <span class="logo-brand">Arbustus</span>
+        <span class="logo-sub">Gramados Sintéticos</span>
+      </div>
+    </a>
+  </header>
+
+  <div class="vd-bar">
+    <div class="vd-nome">Vendedor: <strong id="vd-nome-label">—</strong></div>
+    <button class="vd-logout" onclick="sair()">Sair</button>
+  </div>
+
+  <div class="hero-strip">
+    <div class="hero-eyebrow">Área do vendedor</div>
+    <h1 class="hero-h1">Emitir <em>Voucher</em></h1>
+  </div>
+
+  <main>
+    <div class="card">
+      <div class="card-title">Dados do voucher</div>
+      <div id="alert-box"></div>
+
+      <div class="field">
+        <label>Nome do cliente</label>
+        <input type="text" id="v-nome" placeholder="Ex.: João Silva" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>Serviço / Produto</label>
+        <input type="text" id="v-desc" placeholder="Ex.: Instalação campo society 50m²">
+      </div>
+      <div class="row-2">
+        <div class="field">
+          <label>Validade</label>
+          <input type="number" id="v-qtd" value="30" min="1" max="3650">
+        </div>
+        <div class="field">
+          <label>Unidade</label>
+          <select id="v-unit">
+            <option value="d">Dias</option>
+            <option value="h">Horas</option>
+            <option value="m">Minutos</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Observação (opcional)</label>
+        <textarea id="v-obs" placeholder="Ex.: Válido somente para campo 7x7."></textarea>
+      </div>
+
+      <button class="btn btn-primary" id="btn-emitir" onclick="emitir()">Gerar voucher</button>
+
+      <div class="voucher-result" id="voucher-result">
+        <div class="vr-header">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="14" fill="rgba(255,255,255,0.1)"/>
+            <path d="M9 14l3.5 3.5L19 10" stroke="#10B6AC" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="vr-htxt">
+            <span>Voucher emitido com sucesso</span>
+            <strong id="vr-nome">—</strong>
+          </div>
+        </div>
+        <div class="vr-body">
+          <div class="vr-code" id="vr-code" onclick="copiarCodigo()">
+            <span id="vr-code-txt">—</span>
+            <span class="vr-code-hint">Clique para copiar</span>
+          </div>
+          <div class="vr-meta" id="vr-meta"></div>
+          <div class="vr-actions">
+            <button class="btn-outline btn-wpp"     onclick="compartilharWpp()">WhatsApp</button>
+            <button class="btn-outline btn-link-cp" onclick="copiarLink()">Copiar link</button>
+            <button class="btn-outline btn-nova"    onclick="novoVoucher()">Novo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>© Arbustus <em>Gramados Sintéticos</em> · Sistema de Vouchers</footer>
+</div>
+
+<script>
+document.getElementById('base-css').textContent = CSS_BASE;
+
+const VD_SESSION = 'arb_vendedor';
+let vendedorAtual = null;
+let ultimoVoucher = null;
+
+// ─── LOGIN PIN ────────────────────────────────────────────────────
+async function entrarPin() {
+  const pin  = document.getElementById('pin-input').value.trim();
+  const erro = document.getElementById('pin-error');
+  const btn  = document.getElementById('pin-btn');
+  if (!pin) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Verificando…';
+
+  try {
+    const rows = await supa.select(
+      'vendedores',
+      `select=id,nome,ativo&pin=eq.${encodeURIComponent(pin)}&limit=1`
+    );
+
+    if (!rows.length || !rows[0].ativo) {
+      erro.classList.add('show');
+      setTimeout(() => erro.classList.remove('show'), 3000);
+      document.getElementById('pin-input').value = '';
+    } else {
+      vendedorAtual = rows[0];
+      sessionStorage.setItem(VD_SESSION, JSON.stringify(vendedorAtual));
+      mostrarApp();
+    }
+  } catch(e) {
+    erro.textContent = 'Erro de conexão. Tente novamente.';
+    erro.classList.add('show');
+    setTimeout(() => erro.classList.remove('show'), 3000);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Entrar';
+}
+
+function mostrarApp() {
+  document.getElementById('pin-overlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('vd-nome-label').textContent = vendedorAtual.nome;
+}
+
+function sair() {
+  sessionStorage.removeItem(VD_SESSION);
+  vendedorAtual = null;
+  document.getElementById('pin-overlay').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('pin-input').value = '';
+}
+
+// Restaurar sessão
+const saved = sessionStorage.getItem(VD_SESSION);
+if (saved) {
+  try {
+    vendedorAtual = JSON.parse(saved);
+    mostrarApp();
+  } catch(e) { sessionStorage.removeItem(VD_SESSION); }
+}
+
+// ─── EMISSÃO ─────────────────────────────────────────────────────
+async function emitir() {
+  const nome  = document.getElementById('v-nome').value.trim();
+  const desc  = document.getElementById('v-desc').value.trim();
+  const qtd   = parseInt(document.getElementById('v-qtd').value) || 1;
+  const unit  = document.getElementById('v-unit').value;
+  const obs   = document.getElementById('v-obs').value.trim();
+  const alerta = document.getElementById('alert-box');
+  const btn   = document.getElementById('btn-emitir');
+
+  if (!nome) { alerta.innerHTML = '<div class="alert alert-error">Informe o nome do cliente.</div>'; return; }
+  if (!desc) { alerta.innerHTML = '<div class="alert alert-error">Informe o serviço ou produto.</div>'; return; }
+  alerta.innerHTML = '';
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Gerando…';
+
+  try {
+    const existentes = await supa.select('vouchers', 'select=codigo');
+    const codigo = genCodigo(existentes);
+    const expiry = expiryFromQtd(qtd, unit);
+
+    const [inserido] = await supa.insert('vouchers', {
+      codigo, nome, descricao: desc,
+      observacao: obs || null,
+      expiry,
+      vendedor_id: vendedorAtual.id,
+    });
+
+    ultimoVoucher = inserido;
+
+    const unitLabel = unit==='d'?(qtd===1?'dia':'dias'):unit==='h'?(qtd===1?'hora':'horas'):(qtd===1?'minuto':'minutos');
+    const dataExp = new Date(expiry).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+
+    document.getElementById('vr-nome').textContent     = nome;
+    document.getElementById('vr-code-txt').textContent = codigo;
+    document.getElementById('vr-meta').innerHTML =
+      `<strong>Serviço:</strong> ${desc}<br>` +
+      `<strong>Validade:</strong> ${qtd} ${unitLabel} — expira em ${dataExp}` +
+      (obs ? `<br><strong>Obs:</strong> ${obs}` : '');
+
+    document.getElementById('voucher-result').classList.add('show');
+    document.getElementById('voucher-result').scrollIntoView({behavior:'smooth',block:'center'});
+
+    document.getElementById('v-nome').value = '';
+    document.getElementById('v-desc').value = '';
+    document.getElementById('v-obs').value  = '';
+
+  } catch(e) {
+    console.error(e);
+    alerta.innerHTML = '<div class="alert alert-error">Erro ao salvar. Verifique a conexão.</div>';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Gerar voucher';
+}
+
+function getLink() {
+  if (!ultimoVoucher) return '';
+  return `${location.origin}/consultar.html?codigo=${encodeURIComponent(ultimoVoucher.codigo)}`;
+}
+function copiarCodigo() {
+  if (!ultimoVoucher) return;
+  navigator.clipboard.writeText(ultimoVoucher.codigo).then(()=>toast('Código copiado!')).catch(()=>{});
+}
+function copiarLink() {
+  navigator.clipboard.writeText(getLink()).then(()=>toast('Link copiado!')).catch(()=>{});
+}
+function compartilharWpp() {
+  if (!ultimoVoucher) return;
+  const msg = `*Voucher Arbustus Gramados Sintéticos*\n\nOlá, ${ultimoVoucher.nome}! Segue seu voucher:\n\nCódigo: *${ultimoVoucher.codigo}*\nServiço: ${ultimoVoucher.descricao}\n\nConsulte a validade pelo link:\n${getLink()}`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+}
+function novoVoucher() {
+  ultimoVoucher = null;
+  document.getElementById('voucher-result').classList.remove('show');
+  document.getElementById('v-nome').focus();
+}
+</script>
+</body>
+</html>

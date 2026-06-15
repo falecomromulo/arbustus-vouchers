@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbustus — Relatórios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="supabase.js"></script>
+<script src="auth.js"></script>
+<style id="base-css"></style>
+<style>
+main{max-width:900px;margin:0 auto;padding:1.5rem 1rem 3rem}
+
+/* FILTRO DE PERÍODO */
+.filtro-bar{background:#fff;border:1px solid var(--cinza-borda);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:flex-end;flex-wrap:wrap;gap:12px}
+.filtro-bar .field{margin:0;flex:1;min-width:140px}
+.btn-filtrar{padding:11px 22px;border-radius:8px;background:var(--azul);color:#fff;border:none;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-filtrar:hover{background:#0d3899;transform:translateY(-1px)}
+.btn-limpar{padding:11px 16px;border-radius:8px;background:transparent;color:var(--cinza-texto);border:1.5px solid var(--cinza-borda);font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-limpar:hover{border-color:var(--azul);color:var(--azul)}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin-bottom:1.5rem}
+.kpi{background:#fff;border:1px solid var(--cinza-borda);border-radius:14px;padding:1.25rem;text-align:center;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-total::before{background:var(--azul)}
+.kpi-validos::before{background:var(--verde)}
+.kpi-expirados::before{background:var(--dourado)}
+.kpi-taxa::before{background:var(--teal)}
+.kpi-n{font-size:36px;font-weight:900;line-height:1;margin-bottom:4px}
+.kpi-total .kpi-n{color:var(--azul)}
+.kpi-validos .kpi-n{color:var(--verde)}
+.kpi-expirados .kpi-n{color:var(--dourado)}
+.kpi-taxa .kpi-n{color:var(--teal)}
+.kpi-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--cinza-texto)}
+
+/* RANKING */
+.ranking-card{background:#fff;border:1px solid var(--cinza-borda);border-radius:14px;overflow:hidden;margin-bottom:1.5rem}
+.rc-header{background:var(--azul);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+.rc-title{font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px}
+.rc-sub{font-size:11px;color:rgba(255,255,255,.5)}
+.rank-row{display:grid;grid-template-columns:36px 1fr 80px 80px 80px 90px;align-items:center;padding:14px 1.5rem;border-bottom:1px solid var(--cinza-borda);gap:12px;transition:background .12s}
+.rank-row:last-child{border-bottom:none}
+.rank-row:hover{background:#f7f9fc}
+.rank-row.header{background:var(--cinza-claro);padding:10px 1.5rem;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--cinza-texto)}
+.rank-pos{font-size:18px;font-weight:900;color:var(--cinza-borda);text-align:center}
+.rank-pos.gold{color:#C8941A}
+.rank-pos.silver{color:#888780}
+.rank-pos.bronze{color:#9E5A2A}
+.rank-nome{font-size:14px;font-weight:700;color:#1a1a2e}
+.rank-badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:9px;font-weight:700;text-transform:uppercase;margin-left:6px}
+.rank-badge.ativo{background:#D4F4E2;color:var(--verde-escuro)}
+.rank-badge.inativo{background:#F1EFE8;color:var(--cinza-texto)}
+.rank-num{font-size:16px;font-weight:700;text-align:center}
+.rank-num.blue{color:var(--azul)}
+.rank-num.green{color:var(--verde)}
+.rank-num.amber{color:var(--dourado)}
+.rank-bar-wrap{background:rgba(0,0,0,.05);border-radius:4px;height:6px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.rank-pct{font-size:12px;font-weight:700;color:var(--teal);text-align:right}
+
+/* TIMELINE */
+.timeline-card{background:#fff;border:1px solid var(--cinza-borda);border-radius:14px;overflow:hidden;margin-bottom:1.5rem}
+.tc-header{background:var(--verde-escuro);padding:1rem 1.5rem}
+.tc-title{font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.8px}
+.tc-body{padding:1.5rem}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:120px;margin-bottom:8px}
+.chart-col{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .5s ease;background:var(--azul);opacity:.85}
+.chart-bar:hover{opacity:1}
+.chart-label{font-size:9px;font-weight:600;color:var(--cinza-texto);text-transform:uppercase;letter-spacing:.3px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.chart-val{font-size:10px;font-weight:700;color:var(--azul)}
+
+.empty{background:#fff;border:1px solid var(--cinza-borda);border-radius:14px;padding:3rem 2rem;text-align:center}
+.empty p{font-size:13px;color:var(--cinza-texto);margin-top:8px}
+
+@media(max-width:640px){
+  .rank-row{grid-template-columns:28px 1fr 60px 60px;gap:8px}
+  .rank-row .hide-mob{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-wrap">
+    <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="20" fill="#0B2E73"/><circle cx="20" cy="20" r="16" fill="#2E8B57"/>
+      <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="3" fill="#fff"/>
+    </svg>
+    <div><span class="logo-brand">Arbustus</span><span class="logo-sub">Gramados Sintéticos</span></div>
+  </a>
+  <a href="index.html" class="nav-btn">← Painel</a>
+</header>
+
+<div style="background:linear-gradient(135deg,var(--teal-escuro) 0%,var(--azul) 100%);padding:2rem 1.5rem;position:relative;overflow:hidden">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0,rgba(255,255,255,.022) 1px,transparent 1px,transparent 48px)"></div>
+  <div style="max-width:900px;margin:0 auto;position:relative;z-index:1">
+    <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--teal);margin-bottom:5px">Gestão comercial</div>
+    <div style="font-size:clamp(20px,3vw,28px);font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:-1px">Relatórios de <em style="color:var(--teal);font-style:normal">Desempenho</em></div>
+  </div>
+</div>
+
+<main>
+  <!-- FILTRO PERÍODO -->
+  <div class="filtro-bar">
+    <div class="field">
+      <label>Data início</label>
+      <input type="date" id="f-inicio">
+    </div>
+    <div class="field">
+      <label>Data fim</label>
+      <input type="date" id="f-fim">
+    </div>
+    <button class="btn-filtrar" onclick="aplicarFiltro()">Filtrar</button>
+    <button class="btn-limpar" onclick="limparFiltro()">Todo período</button>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi kpi-total"><div class="kpi-n" id="k-total">—</div><div class="kpi-l">Total emitidos</div></div>
+    <div class="kpi kpi-validos"><div class="kpi-n" id="k-valid">—</div><div class="kpi-l">Ainda válidos</div></div>
+    <div class="kpi kpi-expirados"><div class="kpi-n" id="k-exp">—</div><div class="kpi-l">Expirados</div></div>
+    <div class="kpi kpi-taxa"><div class="kpi-n" id="k-taxa">—</div><div class="kpi-l">Taxa de expiração</div></div>
+  </div>
+
+  <!-- RANKING -->
+  <div class="ranking-card">
+    <div class="rc-header">
+      <div class="rc-title">Ranking de vendedores</div>
+      <div class="rc-sub" id="rc-periodo">Todo o período</div>
+    </div>
+    <div class="rank-row header">
+      <div>#</div><div>Vendedor</div>
+      <div style="text-align:center">Emitidos</div>
+      <div style="text-align:center">Válidos</div>
+      <div style="text-align:center hide-mob">Expirados</div>
+      <div style="text-align:right">Taxa uso</div>
+    </div>
+    <div id="ranking-body"></div>
+  </div>
+
+  <!-- GRÁFICO EMISSÕES POR DIA -->
+  <div class="timeline-card">
+    <div class="tc-header">
+      <div class="tc-title">Emissões por dia (últimos 30 dias)</div>
+    </div>
+    <div class="tc-body">
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+  </div>
+</main>
+
+<footer>© Arbustus <em>Gramados Sintéticos</em> · Sistema de Vouchers</footer>
+
+<script>
+document.getElementById('base-css').textContent = CSS_BASE;
+
+let todosVendedores = [];
+let todosVouchers   = [];
+let filtroInicio    = null;
+let filtroFim       = null;
+
+// Datas padrão: hoje
+const hoje = new Date().toISOString().split('T')[0];
+document.getElementById('f-fim').value = hoje;
+const trintaDias = new Date(Date.now() - 30*86400000).toISOString().split('T')[0];
+document.getElementById('f-inicio').value = trintaDias;
+
+async function carregar() {
+  try {
+    const [vds, vos] = await Promise.all([
+      supa.select('vendedores', 'select=id,nome,ativo&order=nome.asc'),
+      supa.select('vouchers',   'select=id,codigo,expiry,criado_em,vendedor_id&order=criado_em.desc'),
+    ]);
+    todosVendedores = vds;
+    todosVouchers   = vos;
+    renderTudo();
+  } catch(e) {
+    toast('Erro ao carregar dados.', 'erro');
+  }
+}
+
+function aplicarFiltro() {
+  filtroInicio = document.getElementById('f-inicio').value || null;
+  filtroFim    = document.getElementById('f-fim').value   || null;
+  renderTudo();
+}
+
+function limparFiltro() {
+  filtroInicio = null;
+  filtroFim    = null;
+  document.getElementById('f-inicio').value = trintaDias;
+  document.getElementById('f-fim').value    = hoje;
+  renderTudo();
+}
+
+function vouchersFiltrados() {
+  return todosVouchers.filter(v => {
+    const d = new Date(v.criado_em);
+    if (filtroInicio && d < new Date(filtroInicio + 'T00:00:00')) return false;
+    if (filtroFim    && d > new Date(filtroFim    + 'T23:59:59')) return false;
+    return true;
+  });
+}
+
+function renderTudo() {
+  const lista = vouchersFiltrados();
+  renderKpis(lista);
+  renderRanking(lista);
+  renderChart();
+
+  const periodo = filtroInicio || filtroFim
+    ? `${filtroInicio ? new Date(filtroInicio).toLocaleDateString('pt-BR') : '…'} → ${filtroFim ? new Date(filtroFim).toLocaleDateString('pt-BR') : '…'}`
+    : 'Todo o período';
+  document.getElementById('rc-periodo').textContent = periodo;
+}
+
+function renderKpis(lista) {
+  const total = lista.length;
+  const valid = lista.filter(v => !isExpirado(v.expiry)).length;
+  const exp   = total - valid;
+  const taxa  = total > 0 ? Math.round((exp / total) * 100) : 0;
+  document.getElementById('k-total').textContent = total;
+  document.getElementById('k-valid').textContent = valid;
+  document.getElementById('k-exp').textContent   = exp;
+  document.getElementById('k-taxa').textContent  = taxa + '%';
+}
+
+function renderRanking(lista) {
+  const el = document.getElementById('ranking-body');
+
+  // Agrupa por vendedor
+  const mapa = {};
+  todosVendedores.forEach(vd => {
+    mapa[vd.id] = { vd, emitidos: 0, validos: 0 };
+  });
+  // Vouchers sem vendedor
+  mapa['__sem__'] = { vd: { nome: 'Sem vendedor', ativo: false }, emitidos: 0, validos: 0 };
+
+  lista.forEach(v => {
+    const key = v.vendedor_id || '__sem__';
+    if (!mapa[key]) return;
+    mapa[key].emitidos++;
+    if (!isExpirado(v.expiry)) mapa[key].validos++;
+  });
+
+  const ranking = Object.values(mapa)
+    .filter(r => r.emitidos > 0 || r.vd.id) // mostra vendedores mesmo sem emissão no período
+    .sort((a, b) => b.emitidos - a.emitidos);
+
+  if (!ranking.length) {
+    el.innerHTML = '<div style="padding:2rem;text-align:center;font-size:13px;color:var(--cinza-texto)">Nenhum dado para o período selecionado.</div>';
+    return;
+  }
+
+  const maxEmitidos = Math.max(...ranking.map(r => r.emitidos), 1);
+  const posClasses  = ['gold', 'silver', 'bronze'];
+
+  el.innerHTML = ranking.map((r, i) => {
+    const pct     = Math.round((r.emitidos / maxEmitidos) * 100);
+    const taxaUso = r.emitidos > 0 ? Math.round(((r.emitidos - r.validos) / r.emitidos) * 100) : 0;
+    const posClass = i < 3 ? posClasses[i] : '';
+    const posLabel = i < 3 ? ['🥇','🥈','🥉'][i] : (i + 1);
+    return `<div class="rank-row">
+      <div class="rank-pos ${posClass}">${posLabel}</div>
+      <div>
+        <div class="rank-nome">${r.vd.nome}
+          <span class="rank-badge ${r.vd.ativo !== false ? 'ativo' : 'inativo'}">${r.vd.ativo !== false ? 'Ativo' : 'Inativo'}</span>
+        </div>
+        <div class="rank-bar-wrap" style="width:100%;margin-top:5px">
+          <div class="rank-bar-fill" style="width:${pct}%;background:var(--azul)"></div>
+        </div>
+      </div>
+      <div class="rank-num blue">${r.emitidos}</div>
+      <div class="rank-num green">${r.validos}</div>
+      <div class="rank-num amber hide-mob">${r.emitidos - r.validos}</div>
+      <div class="rank-pct">${taxaUso}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderChart() {
+  // Últimos 30 dias independente de filtro
+  const dias = 30;
+  const buckets = {};
+  for (let i = dias - 1; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.toISOString().split('T')[0];
+    buckets[key] = 0;
+  }
+  todosVouchers.forEach(v => {
+    const key = new Date(v.criado_em).toISOString().split('T')[0];
+    if (key in buckets) buckets[key]++;
+  });
+
+  const entries = Object.entries(buckets);
+  const maxVal  = Math.max(...entries.map(e => e[1]), 1);
+  const el = document.getElementById('chart-bars');
+
+  el.innerHTML = entries.map(([data, qtd]) => {
+    const pct  = (qtd / maxVal) * 100;
+    const dia  = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    return `<div class="chart-col">
+      ${qtd > 0 ? `<div class="chart-val">${qtd}</div>` : '<div style="height:16px"></div>'}
+      <div class="chart-bar" style="height:${Math.max(pct, 3)}%" title="${dia}: ${qtd} voucher(s)"></div>
+      <div class="chart-label">${dia}</div>
+    </div>`;
+  }).join('');
+}
+
+carregar();
+</script>
+</body>
+</html>
