@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbustus — Consultar Voucher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="supabase.js"></script>
+<style id="base-css"></style>
+<style>
+  .code-input {
+    width: 100%;
+    border: 2px solid var(--cinza-borda); border-radius: 10px;
+    padding: 15px 16px; font-size: 24px; font-weight: 900;
+    font-family: 'Courier New', monospace; letter-spacing: 4px;
+    color: var(--azul); text-transform: uppercase; text-align: center;
+    outline: none; transition: border .2s, box-shadow .2s; background: #f8faff;
+  }
+  .code-input:focus { border-color: var(--teal); box-shadow: 0 0 0 4px rgba(16,182,172,.12); background: #fff; }
+  .code-input::placeholder { color: #b0bccc; font-size: 16px; letter-spacing: 2px; font-weight: 500; }
+
+  /* ── RESULTADO VÁLIDO ─────────────────────────────── */
+  .res { display: none; margin-top: 1.25rem; border-radius: 16px; overflow: hidden; border: 2px solid; }
+  .res.show { display: block; animation: fadeSlide .35s ease; }
+  @keyframes fadeSlide { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+  .res-valid   { border-color: var(--verde); }
+  .res-expired { border-color: #E5867E; }
+  .res-nf      { border-color: var(--cinza-borda); }
+
+  /* banner */
+  .rb { padding: 1.25rem 1.5rem; text-align: center; }
+  .rb-valid   { background: var(--verde-escuro); }
+  .rb-expired { background: #8B1A1A; }
+  .rb-nf      { background: var(--cinza-claro); }
+  .rb-tag  { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; display: block; margin-bottom: 4px; }
+  .rb-valid   .rb-tag { color: var(--teal); }
+  .rb-expired .rb-tag { color: #F4A8A4; }
+  .rb-nf      .rb-tag { color: var(--cinza-texto); }
+  .rb-title { font-size: 22px; font-weight: 900; text-transform: uppercase; letter-spacing: -.5px; }
+  .rb-valid   .rb-title, .rb-expired .rb-title { color: #fff; }
+  .rb-nf      .rb-title { color: #4a5568; }
+
+  /* body */
+  .rbd { padding: 1.5rem; }
+  .rbd-valid   { background: #f2fef7; }
+  .rbd-expired { background: #FEF0EF; text-align: center; }
+  .rbd-nf      { background: #f8f9fc; text-align: center; }
+
+  /* timer */
+  .timer-block { text-align: center; margin-bottom: 1.25rem; }
+  .timer-big   { font-size: 52px; font-weight: 900; color: var(--verde-escuro); letter-spacing: -2px; line-height: 1; }
+  .timer-unit  { font-size: 18px; font-weight: 500; color: var(--cinza-texto); }
+  .timer-lbl   { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--cinza-texto); margin-top: 5px; }
+
+  /* progress */
+  .prog-wrap { margin-bottom: 1.25rem; }
+  .prog-bg   { height: 8px; background: rgba(0,0,0,.07); border-radius: 4px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 4px; transition: width .6s ease; }
+  .prog-labs { display: flex; justify-content: space-between; margin-top: 5px; font-size: 9px; font-weight: 600; color: var(--cinza-texto); text-transform: uppercase; letter-spacing: .5px; }
+
+  /* detail */
+  .det { background: #fff; border: 1px solid #C3E6D1; border-radius: 10px; padding: 1rem; }
+  .det-row { display: flex; gap: 12px; padding: 6px 0; border-bottom: 1px solid #eaf3ed; font-size: 13px; }
+  .det-row:last-child { border-bottom: none; }
+  .det-lbl  { font-weight: 700; color: var(--azul); min-width: 76px; flex-shrink: 0; font-size: 12px; }
+  .det-val  { color: #2d3748; }
+  .det-code { font-family: 'Courier New',monospace; font-weight: 700; letter-spacing: 1px; color: var(--verde-escuro); }
+
+  /* expirado / NF */
+  .exp-big  { font-size: 36px; font-weight: 900; color: #8B1A1A; margin-bottom: 6px; letter-spacing: -1px; }
+  .exp-sub  { font-size: 14px; color: #7a3535; font-weight: 500; margin-bottom: 1rem; }
+  .exp-det  { background: #fff; border: 1px solid #F0C0BD; border-radius: 10px; padding: 1rem; text-align: left; font-size: 13px; color: #7a3535; line-height: 1.7; }
+  .nf-icon  { margin-bottom: 12px; }
+  .nf-sub   { font-size: 13px; color: var(--cinza-texto); line-height: 1.7; }
+
+  .btn-tentar { background: transparent; color: var(--azul); border: 2px solid var(--azul); font-family: 'Montserrat',sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; border-radius: 8px; padding: 10px 22px; cursor: pointer; margin-top: 1rem; transition: all .2s; }
+  .btn-tentar:hover { background: var(--azul); color: #fff; }
+
+  @media(max-width:420px) { .timer-big { font-size: 40px; } .code-input { font-size: 18px; letter-spacing: 2px; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-wrap">
+    <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="20" fill="#0B2E73"/>
+      <circle cx="20" cy="20" r="16" fill="#2E8B57"/>
+      <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="3" fill="#fff"/>
+    </svg>
+    <div>
+      <span class="logo-brand">Arbustus</span>
+      <span class="logo-sub">Gramados Sintéticos</span>
+    </div>
+  </a>
+</header>
+
+<div class="hero-strip">
+  <div class="hero-eyebrow">Área do cliente</div>
+  <h1 class="hero-h1">Consultar <em>Voucher</em></h1>
+</div>
+
+<main>
+  <div class="card">
+    <div class="card-title">Digite o código do seu voucher</div>
+    <div class="field">
+      <label>Código</label>
+      <input type="text" id="c-code" class="code-input" placeholder="ARB-XXXXXX"
+        maxlength="10" autocomplete="off" autocorrect="off" spellcheck="false"
+        oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9-]/g,'')"
+        onkeydown="if(event.key==='Enter')verificar()">
+    </div>
+    <button class="btn btn-blue" id="btn-check" onclick="verificar()">Verificar validade</button>
+  </div>
+
+  <!-- VÁLIDO -->
+  <div class="res res-valid" id="res-valid">
+    <div class="rb rb-valid">
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none" style="display:block;margin:0 auto 8px">
+        <circle cx="18" cy="18" r="18" fill="rgba(255,255,255,.1)"/>
+        <path d="M11 18l5 5 9-9" stroke="#10B6AC" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="rb-tag">Voucher ativo</span>
+      <div class="rb-title" id="rv-nome">—</div>
+    </div>
+    <div class="rbd rbd-valid">
+      <div class="timer-block">
+        <div class="timer-big" id="timer-txt">—</div>
+        <div class="timer-lbl">restantes para uso</div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:100%;background:var(--verde)"></div></div>
+        <div class="prog-labs"><span>Emissão</span><span id="prog-pct">100%</span><span>Expiração</span></div>
+      </div>
+      <div class="det" id="rv-det"></div>
+    </div>
+  </div>
+
+  <!-- EXPIRADO -->
+  <div class="res res-expired" id="res-expired">
+    <div class="rb rb-expired">
+      <span class="rb-tag">Voucher expirado</span>
+      <div class="rb-title">Prazo encerrado</div>
+    </div>
+    <div class="rbd rbd-expired">
+      <div class="exp-big">Expirado</div>
+      <div class="exp-sub" id="exp-data">—</div>
+      <div class="exp-det" id="exp-det"></div>
+      <button class="btn-tentar" onclick="limpar()">Consultar outro</button>
+    </div>
+  </div>
+
+  <!-- NÃO ENCONTRADO -->
+  <div class="res res-nf" id="res-nf">
+    <div class="rb rb-nf">
+      <span class="rb-tag">Não encontrado</span>
+      <div class="rb-title">Código inválido</div>
+    </div>
+    <div class="rbd rbd-nf">
+      <div class="nf-icon">
+        <svg width="44" height="44" viewBox="0 0 44 44" fill="none"><circle cx="22" cy="22" r="22" fill="#EEF2FF"/><path d="M22 14v9M22 27h.01" stroke="#6B7A99" stroke-width="2.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="nf-sub">Nenhum voucher encontrado com este código.<br>Verifique e tente novamente — formato: <strong>ARB-XXXXXX</strong></div>
+      <button class="btn-tentar" onclick="limpar()">Tentar novamente</button>
+    </div>
+  </div>
+</main>
+
+<footer>© Arbustus <em>Gramados Sintéticos</em> · Sistema de Vouchers</footer>
+
+<script>
+document.getElementById('base-css').textContent = CSS_BASE;
+
+let timerInterval = null;
+let vAtivo = null;
+
+function ocultar() {
+  ['res-valid','res-expired','res-nf'].forEach(id =>
+    document.getElementById(id).classList.remove('show')
+  );
+}
+
+function limpar() {
+  ocultar();
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  vAtivo = null;
+  document.getElementById('c-code').value = '';
+  document.getElementById('c-code').focus();
+}
+
+function atualizarTimer() {
+  if (!vAtivo) return;
+  const t   = tempoRestante(vAtivo.expiry);
+  const pct = progressoPct(vAtivo.criado_em, vAtivo.expiry);
+  if (t.raw <= 0) {
+    clearInterval(timerInterval);
+    limpar();
+    verificarCodigo(vAtivo.codigo);
+    return;
+  }
+  document.getElementById('timer-txt').innerHTML =
+    t.unit ? `${t.txt} <span class="timer-unit">${t.unit}</span>` : t.txt;
+  const fill = document.getElementById('prog-fill');
+  fill.style.width   = pct.toFixed(1) + '%';
+  fill.style.background = corPct(pct);
+  document.getElementById('prog-pct').textContent = Math.round(pct) + '%';
+}
+
+async function verificarCodigo(codigo) {
+  ocultar();
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+  vAtivo = null;
+
+  const btn = document.getElementById('btn-check');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Verificando…';
+
+  try {
+    const rows = await supa.select(
+      'vouchers',
+      `select=id,codigo,nome,descricao,observacao,expiry,criado_em&codigo=eq.${encodeURIComponent(codigo)}&limit=1`
+    );
+
+    if (!rows.length) {
+      document.getElementById('res-nf').classList.add('show');
+      return;
+    }
+
+    const v = rows[0];
+
+    if (isExpirado(v.expiry)) {
+      const exp = new Date(v.expiry).toLocaleDateString('pt-BR', {
+        day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit'
+      });
+      document.getElementById('exp-data').textContent = `Expirou em ${exp}`;
+      document.getElementById('exp-det').innerHTML =
+        `<strong>Cliente:</strong> ${v.nome}<br>` +
+        `<strong>Serviço:</strong> ${v.descricao}` +
+        (v.observacao ? `<br><strong>Obs:</strong> ${v.observacao}` : '');
+      document.getElementById('res-expired').classList.add('show');
+      return;
+    }
+
+    vAtivo = v;
+    document.getElementById('rv-nome').textContent = v.nome;
+
+    const dExp  = new Date(v.expiry).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+    const dCri  = new Date(v.criado_em).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    document.getElementById('rv-det').innerHTML =
+      `<div class="det-row"><span class="det-lbl">Código</span><span class="det-val det-code">${v.codigo}</span></div>` +
+      `<div class="det-row"><span class="det-lbl">Serviço</span><span class="det-val">${v.descricao}</span></div>` +
+      (v.observacao ? `<div class="det-row"><span class="det-lbl">Obs</span><span class="det-val">${v.observacao}</span></div>` : '') +
+      `<div class="det-row"><span class="det-lbl">Emitido</span><span class="det-val">${dCri}</span></div>` +
+      `<div class="det-row"><span class="det-lbl">Expira</span><span class="det-val">${dExp}</span></div>`;
+
+    atualizarTimer();
+    timerInterval = setInterval(atualizarTimer, 1000);
+    document.getElementById('res-valid').classList.add('show');
+    document.getElementById('res-valid').scrollIntoView({ behavior:'smooth', block:'center' });
+
+  } catch(e) {
+    console.error(e);
+    toast('Erro ao consultar. Verifique sua conexão.', 'erro');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Verificar validade';
+}
+
+function verificar() {
+  const codigo = document.getElementById('c-code').value.trim().toUpperCase();
+  if (!codigo) { document.getElementById('c-code').focus(); return; }
+  verificarCodigo(codigo);
+}
+
+// Auto-fill pelo parâmetro ?codigo=
+window.addEventListener('DOMContentLoaded', () => {
+  const p = new URLSearchParams(location.search).get('codigo');
+  if (p) {
+    document.getElementById('c-code').value = p.toUpperCase();
+    setTimeout(verificar, 250);
+  }
+});
+</script>
+</body>
+</html>

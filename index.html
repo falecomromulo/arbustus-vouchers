@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbustus — Sistema de Vouchers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="supabase.js"></script>
+<style id="base-css"></style>
+<style>
+  body { display: flex; flex-direction: column; }
+
+  .hero-home {
+    background: var(--azul);
+    padding: 5rem 2rem 6rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-home::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(255,255,255,.022) 0, rgba(255,255,255,.022) 1px, transparent 1px, transparent 48px),
+      repeating-linear-gradient(0deg,  rgba(255,255,255,.012) 0, rgba(255,255,255,.012) 1px, transparent 1px, transparent 48px);
+  }
+  .hero-home::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 50%;
+    transform: translateX(-50%);
+    width: 360px; height: 180px;
+    border: 2px solid rgba(46,139,87,.18);
+    border-radius: 50%;
+  }
+  .hero-inner { position: relative; z-index: 1; }
+  .eyebrow {
+    display: inline-block;
+    font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 3px;
+    color: var(--teal); border: 1px solid rgba(16,182,172,.3);
+    padding: 5px 14px; border-radius: 20px; margin-bottom: 20px;
+    background: rgba(16,182,172,.06);
+  }
+  .hero-home h1 {
+    font-size: clamp(38px, 7vw, 68px);
+    font-weight: 900; color: #fff;
+    text-transform: uppercase; letter-spacing: -3px; line-height: .88;
+    margin-bottom: 18px;
+  }
+  .hero-home h1 em { color: var(--teal); font-style: normal; }
+  .hero-sub { font-size: 14px; color: rgba(255,255,255,.5); max-width: 400px; margin: 0 auto; line-height: 1.7; font-weight: 400; }
+
+  /* NAV CARDS */
+  .nav-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; max-width: 820px; margin: -44px auto 0; padding: 0 1rem; position: relative; z-index: 2; }
+  .nav-card {
+    background: #fff;
+    border: 1px solid var(--cinza-borda);
+    border-radius: 16px;
+    padding: 1.75rem 1.5rem;
+    display: block;
+    box-shadow: 0 4px 24px rgba(11,46,115,.07);
+    transition: all .25s;
+    position: relative; overflow: hidden;
+  }
+  .nav-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 16px 16px 0 0; }
+  .nc-emit::before  { background: var(--verde-escuro); }
+  .nc-check::before { background: var(--teal); }
+  .nc-list::before  { background: var(--azul); }
+  .nav-card:hover   { transform: translateY(-5px); box-shadow: 0 14px 44px rgba(11,46,115,.13); border-color: transparent; }
+
+  .nc-icon { width: 50px; height: 50px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; }
+  .nc-emit  .nc-icon { background: #E8F8F0; }
+  .nc-check .nc-icon { background: #E6FAFA; }
+  .nc-list  .nc-icon { background: #EDF3FF; }
+
+  .nc-tag { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; display: block; }
+  .nc-emit  .nc-tag { color: var(--verde); }
+  .nc-check .nc-tag { color: var(--teal-escuro); }
+  .nc-list  .nc-tag { color: var(--azul); }
+
+  .nc-title { font-size: 20px; font-weight: 900; color: #1a1a2e; text-transform: uppercase; letter-spacing: -.5px; line-height: 1; margin-bottom: 8px; }
+  .nc-desc  { font-size: 12px; color: var(--cinza-texto); line-height: 1.6; }
+  .nc-arrow { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; transition: gap .2s; }
+  .nc-emit  .nc-arrow { color: var(--verde-escuro); }
+  .nc-check .nc-arrow { color: var(--teal-escuro); }
+  .nc-list  .nc-arrow { color: var(--azul); }
+  .nav-card:hover .nc-arrow { gap: 10px; }
+
+  /* STATS BAND */
+  .stats-band { background: var(--verde-escuro); padding: 2.5rem 1.5rem; margin-top: 2.5rem; }
+  .sb-inner { max-width: 820px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.25rem; }
+  .sb-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,.45); margin-bottom: 4px; }
+  .sb-title { font-size: 20px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: -.5px; }
+  .sb-nums  { display: flex; gap: 2rem; flex-wrap: wrap; }
+  .sb-num   { text-align: center; }
+  .sb-n     { font-size: 36px; font-weight: 900; color: #fff; line-height: 1; }
+  .sb-n.teal   { color: var(--teal); }
+  .sb-n.dourado{ color: var(--dourado); }
+  .sb-nl    { font-size: 9px; font-weight: 600; color: rgba(255,255,255,.4); text-transform: uppercase; letter-spacing: 1px; }
+
+  @media(max-width:560px) { .hero-home h1 { letter-spacing: -2px; } .sb-inner { flex-direction: column; align-items: flex-start; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-wrap">
+    <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="20" fill="#0B2E73"/>
+      <circle cx="20" cy="20" r="16" fill="#2E8B57"/>
+      <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="3" fill="#fff"/>
+    </svg>
+    <div>
+      <span class="logo-brand">Arbustus</span>
+      <span class="logo-sub">Gramados Sintéticos</span>
+    </div>
+  </a>
+</header>
+
+<div class="hero-home">
+  <div class="hero-inner">
+    <div class="eyebrow">Sistema de vouchers</div>
+    <h1>Do <em>campo</em><br>ao cliente</h1>
+    <p class="hero-sub">Emita, compartilhe e controle vouchers em tempo real — dados na nuvem, acessíveis de qualquer dispositivo.</p>
+  </div>
+</div>
+
+<div class="nav-grid">
+  <a href="admin.html" class="nav-card nc-emit">
+    <div class="nc-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="#2E8B57" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </div>
+    <span class="nc-tag">Admin</span>
+    <div class="nc-title">Emitir<br>Voucher</div>
+    <div class="nc-desc">Gere um código único com validade em dias, horas ou minutos.</div>
+    <div class="nc-arrow">Acessar <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </a>
+  <a href="consultar.html" class="nav-card nc-check">
+    <div class="nc-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="#10B6AC" stroke-width="2.2"/><path d="m21 21-4.35-4.35" stroke="#10B6AC" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </div>
+    <span class="nc-tag">Cliente</span>
+    <div class="nc-title">Consultar<br>Voucher</div>
+    <div class="nc-desc">Verifique em tempo real quanto tempo resta para usar o voucher.</div>
+    <div class="nc-arrow">Acessar <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </a>
+  <a href="lista.html" class="nav-card nc-list">
+    <div class="nc-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6M9 16h4" stroke="#0B2E73" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <span class="nc-tag">Gestão</span>
+    <div class="nc-title">Vouchers<br>Emitidos</div>
+    <div class="nc-desc">Visualize, filtre, copie links e gerencie todos os vouchers.</div>
+    <div class="nc-arrow">Acessar <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+  </a>
+</div>
+
+<div class="stats-band">
+  <div class="sb-inner">
+    <div>
+      <div class="sb-label">Arbustus Vouchers · Supabase</div>
+      <div class="sb-title">Resumo ao vivo</div>
+    </div>
+    <div class="sb-nums">
+      <div class="sb-num"><div class="sb-n" id="st">—</div><div class="sb-nl">Emitidos</div></div>
+      <div class="sb-num"><div class="sb-n teal" id="sv">—</div><div class="sb-nl">Válidos</div></div>
+      <div class="sb-num"><div class="sb-n dourado" id="se">—</div><div class="sb-nl">Expirados</div></div>
+    </div>
+  </div>
+</div>
+
+<footer>© Arbustus <em>Gramados Sintéticos</em> · Sistema de Vouchers · Fortaleza, CE</footer>
+
+<script>
+document.getElementById('base-css').textContent = CSS_BASE;
+
+async function carregarStats() {
+  try {
+    const todos = await supa.select('vouchers', 'select=expiry');
+    const total   = todos.length;
+    const validos = todos.filter(v => !isExpirado(v.expiry)).length;
+    document.getElementById('st').textContent = total;
+    document.getElementById('sv').textContent = validos;
+    document.getElementById('se').textContent = total - validos;
+  } catch(e) {
+    document.getElementById('st').textContent = '—';
+  }
+}
+carregarStats();
+</script>
+</body>
+</html>

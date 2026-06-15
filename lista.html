@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arbustus — Vouchers Emitidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="supabase.js"></script>
+<style id="base-css"></style>
+<style>
+  /* HERO WIDE */
+  .hero-wide { background: linear-gradient(135deg, #0d1f4a 0%, var(--verde-escuro) 100%); padding: 2rem 1.5rem; }
+  .hero-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; position: relative; }
+  .hero-inner::before { content:''; position:absolute;inset:0; background: repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0,rgba(255,255,255,.022) 1px,transparent 1px,transparent 48px); pointer-events:none; }
+  .h-text { position:relative; z-index:1; }
+  .h-eyebrow { font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--teal);margin-bottom:5px; }
+  .h-title { font-size:clamp(20px,3vw,30px);font-weight:900;color:#fff;text-transform:uppercase;letter-spacing:-1px; }
+  .h-title em { color:var(--teal);font-style:normal; }
+
+  .stats-pills { display:flex;gap:.75rem;flex-wrap:wrap;position:relative;z-index:1; }
+  .pill { background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:.6rem 1.1rem;text-align:center; }
+  .pill-n { font-size:28px;font-weight:900;color:#fff;line-height:1; }
+  .pill-n.teal    { color:var(--teal); }
+  .pill-n.dourado { color:var(--dourado); }
+  .pill-l { font-size:9px;font-weight:600;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px; }
+
+  /* TOOLBAR */
+  .toolbar { display:flex;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem; }
+  .search-wrap { flex:1;min-width:180px;position:relative; }
+  .search-wrap input { width:100%;border:1.5px solid var(--cinza-borda);border-radius:8px;padding:10px 14px 10px 36px;font-size:13px;font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;outline:none;transition:border .2s,box-shadow .2s; }
+  .search-wrap input:focus { border-color:var(--teal);box-shadow:0 0 0 3px rgba(16,182,172,.12); }
+  .search-icon { position:absolute;left:11px;top:50%;transform:translateY(-50%);opacity:.35; }
+  .fsel { border:1.5px solid var(--cinza-borda);border-radius:8px;padding:10px 14px;font-size:12px;font-family:'Montserrat',sans-serif;font-weight:600;color:#1a1a2e;background:#fff;outline:none;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:border .2s; }
+  .fsel:focus { border-color:var(--teal); }
+  .btn-reload { border:1.5px solid var(--cinza-borda);border-radius:8px;padding:10px 14px;background:#fff;cursor:pointer;transition:all .15s;font-family:'Montserrat',sans-serif;color:var(--cinza-texto);font-size:13px;display:flex;align-items:center;gap:6px;font-weight:600; }
+  .btn-reload:hover { border-color:var(--teal);color:var(--teal); }
+  .btn-reload.loading svg { animation:spin .7s linear infinite; }
+
+  /* EMPTY */
+  .empty { background:#fff;border:1px solid var(--cinza-borda);border-radius:16px;padding:4rem 2rem;text-align:center; }
+  .empty h3 { font-size:16px;font-weight:700;text-transform:uppercase;color:var(--cinza-texto);margin-bottom:6px; }
+  .empty p  { font-size:13px;color:var(--cinza-texto); }
+
+  /* TABLE */
+  .table-wrap { overflow-x:auto; border-radius:16px; box-shadow:0 2px 16px rgba(11,46,115,.04); }
+  table { width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--cinza-borda); min-width:600px; }
+  thead tr { background:var(--azul); }
+  th { padding:12px 16px;text-align:left;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.65);white-space:nowrap; }
+  tbody tr { border-bottom:1px solid var(--cinza-borda);transition:background .12s; }
+  tbody tr:last-child { border-bottom:none; }
+  tbody tr:hover { background:#f7f9fc; }
+  td { padding:13px 16px;font-size:13px;vertical-align:middle; }
+
+  .td-code { font-family:'Courier New',monospace;font-weight:700;font-size:14px;color:var(--azul);letter-spacing:1.5px;white-space:nowrap; }
+  .td-client strong { display:block;font-size:13px;font-weight:700;color:#1a1a2e; }
+  .td-client span   { font-size:11px;color:var(--cinza-texto); }
+  .td-exp { font-size:12px;white-space:nowrap; }
+  .td-exp strong { display:block;color:#1a1a2e;font-size:13px; }
+  .td-rest { font-size:12px;color:var(--cinza-texto); }
+
+  .prog-mini { width:56px;height:5px;background:rgba(0,0,0,.07);border-radius:3px;overflow:hidden;margin-top:4px; }
+  .prog-mf   { height:100%;border-radius:3px; }
+
+  .ac-btn { padding:5px 10px;border-radius:6px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;border:1.5px solid;background:transparent;font-family:'Montserrat',sans-serif;transition:all .15s;white-space:nowrap; }
+  .ac-link { color:var(--teal-escuro);border-color:var(--teal); }
+  .ac-link:hover { background:#E6FAFA; }
+  .ac-del  { color:var(--perigo);border-color:var(--perigo);margin-left:4px; }
+  .ac-del:hover { background:#FDEDEC; }
+  .td-ac { white-space:nowrap; }
+
+  @media(max-width:640px) { .hero-inner { flex-direction:column;align-items:flex-start; } .stats-pills { width:100%; } }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="logo-wrap">
+    <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="20" cy="20" r="20" fill="#0B2E73"/>
+      <circle cx="20" cy="20" r="16" fill="#2E8B57"/>
+      <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
+      <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
+      <circle cx="20" cy="20" r="3" fill="#fff"/>
+    </svg>
+    <div>
+      <span class="logo-brand">Arbustus</span>
+      <span class="logo-sub">Gramados Sintéticos</span>
+    </div>
+  </a>
+  <a href="index.html" class="nav-btn">← Painel</a>
+</header>
+
+<div class="hero-wide">
+  <div class="hero-inner">
+    <div class="h-text">
+      <div class="h-eyebrow">Gestão comercial</div>
+      <div class="h-title">Vouchers <em>Emitidos</em></div>
+    </div>
+    <div class="stats-pills">
+      <div class="pill"><div class="pill-n" id="p-total">—</div><div class="pill-l">Total</div></div>
+      <div class="pill"><div class="pill-n teal"    id="p-valid">—</div><div class="pill-l">Válidos</div></div>
+      <div class="pill"><div class="pill-n dourado" id="p-exp">—</div><div class="pill-l">Expirados</div></div>
+    </div>
+  </div>
+</div>
+
+<main class="wide">
+  <div class="toolbar">
+    <div class="search-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none">
+        <circle cx="11" cy="11" r="8" stroke="#6B7A99" stroke-width="2"/>
+        <path d="m21 21-4.35-4.35" stroke="#6B7A99" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input type="text" id="search-q" placeholder="Buscar por código, cliente ou serviço…" oninput="renderTabela()">
+    </div>
+    <select class="fsel" id="filtro-status" onchange="renderTabela()">
+      <option value="all">Todos</option>
+      <option value="valid">Válidos</option>
+      <option value="expired">Expirados</option>
+    </select>
+    <button class="btn-reload" id="btn-reload" onclick="carregar()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+        <path d="M4 4v5h5M20 20v-5h-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4.05 9A9 9 0 0 1 20 12M19.95 15a9 9 0 0 1-15.95-3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Atualizar
+    </button>
+  </div>
+  <div id="table-area"></div>
+</main>
+
+<footer>© Arbustus <em>Gramados Sintéticos</em> · Sistema de Vouchers</footer>
+
+<script>
+document.getElementById('base-css').textContent = CSS_BASE;
+
+let todosVouchers = [];
+
+async function carregar() {
+  const btn = document.getElementById('btn-reload');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  try {
+    todosVouchers = await supa.select(
+      'vouchers',
+      'select=id,codigo,nome,descricao,observacao,expiry,criado_em&order=criado_em.desc'
+    );
+    renderTabela();
+    atualizarPills();
+  } catch(e) {
+    console.error(e);
+    document.getElementById('table-area').innerHTML =
+      `<div class="empty"><h3>Erro ao carregar</h3><p>Verifique a conexão com o Supabase.</p></div>`;
+  }
+
+  btn.classList.remove('loading');
+  btn.disabled = false;
+}
+
+function atualizarPills() {
+  const total   = todosVouchers.length;
+  const validos = todosVouchers.filter(v => !isExpirado(v.expiry)).length;
+  document.getElementById('p-total').textContent = total;
+  document.getElementById('p-valid').textContent = validos;
+  document.getElementById('p-exp').textContent   = total - validos;
+}
+
+function renderTabela() {
+  const q      = (document.getElementById('search-q').value || '').toLowerCase();
+  const filtro = document.getElementById('filtro-status').value;
+
+  const lista = todosVouchers.filter(v => {
+    const expirado = isExpirado(v.expiry);
+    const statusOk = filtro === 'all' || (filtro === 'valid' && !expirado) || (filtro === 'expired' && expirado);
+    const textOk   = (v.codigo + v.nome + v.descricao).toLowerCase().includes(q);
+    return statusOk && textOk;
+  });
+
+  const area = document.getElementById('table-area');
+
+  if (!lista.length) {
+    area.innerHTML = `<div class="empty">
+      <svg width="44" height="44" viewBox="0 0 24 24" fill="none" style="margin-bottom:12px;opacity:.25">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6M9 16h4" stroke="#0B2E73" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <h3>${todosVouchers.length ? 'Nenhum resultado' : 'Nenhum voucher emitido'}</h3>
+      <p>${todosVouchers.length ? 'Tente mudar o filtro ou a busca.' : 'Acesse o painel para emitir o primeiro voucher.'}</p>
+    </div>`;
+    return;
+  }
+
+  const rows = lista.map(v => {
+    const exp     = isExpirado(v.expiry);
+    const dExp    = new Date(v.expiry).toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+    const hExp    = new Date(v.expiry).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+    const pct     = progressoPct(v.criado_em, v.expiry);
+    const cor     = corPct(pct);
+    const restStr = !exp ? (tempoRestante(v.expiry).txt + (tempoRestante(v.expiry).unit ? ' ' + tempoRestante(v.expiry).unit : '')) : '—';
+
+    return `<tr>
+      <td class="td-code">${v.codigo}</td>
+      <td class="td-client"><strong>${v.nome}</strong><span>${v.descricao}</span></td>
+      <td><span class="badge badge-${exp ? 'expired' : 'valid'}">${exp ? 'Expirado' : 'Válido'}</span>
+        ${!exp ? `<div class="prog-mini"><div class="prog-mf" style="width:${pct.toFixed(0)}%;background:${cor}"></div></div>` : ''}
+      </td>
+      <td class="td-exp"><strong>${dExp}</strong><span style="display:block;font-size:11px;color:var(--cinza-texto)">${hExp}</span></td>
+      <td class="td-rest">${restStr}</td>
+      <td class="td-ac">
+        <button class="ac-btn ac-link" onclick="copiarLink('${v.codigo}')">Link</button>
+        <button class="ac-btn ac-del"  onclick="excluir('${v.id}','${v.codigo}')">Excluir</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>Código</th><th>Cliente / Serviço</th><th>Status</th>
+      <th>Expira</th><th>Restante</th><th>Ações</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+function copiarLink(codigo) {
+  const url = `${location.origin}/consultar.html?codigo=${encodeURIComponent(codigo)}`;
+  navigator.clipboard.writeText(url).then(() => toast('Link copiado!')).catch(() => {});
+}
+
+async function excluir(id, codigo) {
+  if (!confirm(`Excluir o voucher ${codigo}?\n\nEsta ação não pode ser desfeita.`)) return;
+  try {
+    await supa.delete('vouchers', `id=eq.${id}`);
+    todosVouchers = todosVouchers.filter(v => v.id !== id);
+    renderTabela();
+    atualizarPills();
+    toast('Voucher excluído.');
+  } catch(e) {
+    toast('Erro ao excluir. Tente novamente.', 'erro');
+  }
+}
+
+carregar();
+setInterval(carregar, 60000); // auto-refresh 1 min
+</script>
+</body>
+</html>
