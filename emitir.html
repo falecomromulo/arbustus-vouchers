@@ -216,7 +216,17 @@ const FAVICON_SRC    = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYS
       </div>
       <div class="field">
         <label>Serviço / Produto</label>
-        <input type="text" id="v-desc" placeholder="Ex.: Instalação campo society 50m²">
+        <select id="v-desc-sel" onchange="onServicoPick()" style="width:100%;border:1.5px solid var(--cinza-borda);border-radius:8px;padding:11px 14px;font-size:14px;font-family:'Montserrat',sans-serif;color:#1a1a2e;background:#fff;outline:none;transition:border .2s,box-shadow .2s;cursor:pointer">
+          <option value="">— Selecione o benefício —</option>
+          <option value="Upgrade de grama: troca de 9.000 dtex para 10.500 dtex">Trocar grama de 9.000dtex por 10.500dtex</option>
+          <option value="Placar eletrônico para campo society">Um placar eletrônico</option>
+          <option value="TV 43\" AOC ou similar">Uma TV de 43\", marca AOC ou similar</option>
+          <option value="__custom__">Personalizar...</option>
+        </select>
+      </div>
+      <div class="field" id="v-desc-custom-wrap" style="display:none">
+        <label>Descreva o benefício</label>
+        <input type="text" id="v-desc-custom" placeholder="Ex.: Kit de redes para campo society" autocomplete="off">
       </div>
       <div class="row-2">
         <div class="field">
@@ -479,7 +489,7 @@ if (saved) {
 // ─── EMISSÃO ─────────────────────────────────────────────────────
 async function emitir() {
   const nome  = document.getElementById('v-nome').value.trim();
-  const desc  = document.getElementById('v-desc').value.trim();
+  const desc  = getServico();
   const qtd   = parseInt(document.getElementById('v-qtd').value) || 1;
   const unit  = document.getElementById('v-unit').value;
   const obs   = document.getElementById('v-obs').value.trim();
@@ -487,7 +497,15 @@ async function emitir() {
   const btn   = document.getElementById('btn-emitir');
 
   if (!nome) { alerta.innerHTML = '<div class="alert alert-error">Informe o nome do cliente.</div>'; return; }
-  if (!desc) { alerta.innerHTML = '<div class="alert alert-error">Informe o serviço ou produto.</div>'; return; }
+  if (!desc) {
+    const sel = document.getElementById('v-desc-sel');
+    if (!sel.value) {
+      alerta.innerHTML = '<div class="alert alert-error">Selecione o serviço ou benefício.</div>';
+    } else {
+      alerta.innerHTML = '<div class="alert alert-error">Descreva o benefício personalizado.</div>';
+    }
+    return;
+  }
   alerta.innerHTML = '';
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Gerando…';
@@ -592,10 +610,37 @@ function compartilharWpp() {
   window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
+
+function onServicoPick() {
+  const sel  = document.getElementById('v-desc-sel');
+  const wrap = document.getElementById('v-desc-custom-wrap');
+  const inp  = document.getElementById('v-desc-custom');
+  if (sel.value === '__custom__') {
+    wrap.style.display = 'block';
+    inp.focus();
+  } else {
+    wrap.style.display = 'none';
+    inp.value = '';
+  }
+  // Adicionar foco visual no select
+  sel.style.borderColor = sel.value ? 'var(--teal)' : 'var(--cinza-borda)';
+}
+
+function getServico() {
+  const sel = document.getElementById('v-desc-sel');
+  if (sel.value === '__custom__') {
+    return document.getElementById('v-desc-custom').value.trim();
+  }
+  return sel.value;
+}
+
 function novoVoucher() {
   ultimoVoucher = null;
   if (timerCupom) clearInterval(timerCupom);
   document.getElementById('voucher-result').classList.remove('show');
+  document.getElementById('v-desc-sel').value = '';
+  document.getElementById('v-desc-custom-wrap').style.display = 'none';
+  document.getElementById('v-desc-custom').value = '';
   document.getElementById('v-nome').focus();
 }
 </script>
