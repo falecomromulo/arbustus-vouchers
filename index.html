@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="logos.js"></script>
 <script src="supabase.js"></script>
 <style id="base-css"></style>
 <style>
@@ -67,14 +68,7 @@ body{display:flex;flex-direction:column}
 <body>
 <header>
   <a href="index.html" class="logo-wrap">
-    <svg class="logo-symbol" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="20" fill="#0B2E73"/><circle cx="20" cy="20" r="16" fill="#2E8B57"/>
-      <rect x="10" y="19" width="20" height="2" fill="rgba(255,255,255,0.55)" rx="1"/>
-      <rect x="19" y="10" width="2" height="20" fill="rgba(255,255,255,0.55)" rx="1"/>
-      <ellipse cx="20" cy="20" rx="6" ry="9" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="1.5"/>
-      <circle cx="20" cy="20" r="3" fill="#fff"/>
-    </svg>
-    <div><span class="logo-brand">Arbustus</span><span class="logo-sub">Gramados Sintéticos</span></div>
+    <img id="header-logo-index.html" src="" alt="Arbustus Gramados Sintéticos" style="height:38px;object-fit:contain">
   </a>
 </header>
 
@@ -136,6 +130,8 @@ body{display:flex;flex-direction:column}
 
 <script>
 document.getElementById('base-css').textContent = CSS_BASE;
+document.getElementById('header-logo-index.html').src = LOGO_SRC;
+
 async function carregarStats(){
   try{
     const todos=await supa.select('vouchers','select=expiry');
