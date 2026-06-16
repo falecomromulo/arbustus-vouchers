@@ -1,7 +1,7 @@
 // ─── CONFIGURAÇÃO SUPABASE ────────────────────────────────────────────────────
 // Substitua os valores abaixo após criar o projeto no Supabase
-const SUPA_URL  = 'COLE_SUA_SUPABASE_URL_AQUI';       // ex: https://xyzabc.supabase.co
-const SUPA_KEY  = 'COLE_SUA_ANON_KEY_AQUI';           // chave anon/public
+const SUPA_URL  = 'https://nfvrblbpaqbgmsxobgbj.supabase.co';       // ex: https://xyzabc.supabase.co
+const SUPA_KEY  = 'sb_publishable_K4dlufSe2SQZClDa1GAcfw_LfAOVkRh';           // chave anon/public
 
 // ─── CLIENTE REST SUPABASE ────────────────────────────────────────────────────
 const supa = {
