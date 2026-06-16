@@ -2,11 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "arbustus-vouchers",
   "compatibility_date": "2026-06-16",
-  "observability": { "enabled": true },
-  "assets": {
-    "directory": ".",
-    "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
+  "observability": {
+    "enabled": true
   },
-  "compatibility_flags": ["nodejs_compat"]
+  "assets": {
+    "directory": "."
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
 }
