@@ -187,7 +187,7 @@
 <div id="app" style="display:none">
   <header>
     <a href="index.html" class="logo-wrap">
-      <img id="header-logo" src="" alt="Arbustus Gramados Sintéticos" style="height:36px;object-fit:contain">
+      <img id="header-logo" src="" alt="Arbustus Gramados Sintéticos" style="height:38px;object-fit:contain;filter:brightness(0) invert(1)">
     </a>
   </header>
 
@@ -315,8 +315,8 @@
 <script>
 document.getElementById('base-css').textContent = CSS_BASE;
 document.getElementById('pin-logo-img').src    = LOGO_SRC;
-document.getElementById('header-logo').src     = LOGO_WHITE_SRC;
-document.getElementById('cupom-logo-img').src  = LOGO_WHITE_SRC;
+document.getElementById('header-logo').src     = LOGO_SRC;
+document.getElementById('cupom-logo-img').src  = LOGO_SRC;
 
 // ─── RATE LIMIT DE PIN ────────────────────────────────────────────
 const RL_KEY = 'arb_pin_rl';
